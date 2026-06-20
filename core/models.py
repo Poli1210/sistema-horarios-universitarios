@@ -130,3 +130,38 @@ class Horario(models.Model):
             f"{self.hora_inicio.strftime('%H:%M')}–{self.hora_fin.strftime('%H:%M')} "
             f"({self.salon})"
         )
+
+
+class Estudiante(models.Model):
+    """
+    Estudiante que solicita automatrícula.
+    Su jornada y semestre determinan qué horarios le corresponden.
+    """
+
+    JORNADAS = [
+        ('diurno',   'Diurno'),
+        ('nocturno', 'Nocturno'),
+        ('virtual',  'Virtual'),
+    ]
+
+    SEMESTRES = [(str(i), f"Semestre {i}") for i in range(1, 11)]
+
+    nombre   = models.CharField(max_length=200, verbose_name="Nombre completo")
+    email    = models.EmailField(unique=True, verbose_name="Correo electrónico")
+    jornada  = models.CharField(max_length=10, choices=JORNADAS, verbose_name="Jornada")
+    semestre = models.CharField(max_length=2,  choices=SEMESTRES, verbose_name="Semestre")
+    programa = models.ForeignKey(
+        Programa,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='estudiantes',
+        verbose_name="Programa"
+    )
+
+    class Meta:
+        verbose_name = "Estudiante"
+        verbose_name_plural = "Estudiantes"
+        ordering = ['nombre']
+
+    def __str__(self):
+        return f"{self.nombre} ({self.get_jornada_display()} — Sem. {self.semestre})"

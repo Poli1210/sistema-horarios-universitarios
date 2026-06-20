@@ -73,3 +73,4 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+ANTHROPIC_API_KEY = 'COLOCA_TU_CLAVE_DE_GROQ_AQUI'

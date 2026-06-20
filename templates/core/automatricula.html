@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block title %}Automatrícula Inteligente{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+
+    <div class="text-center mb-4">
+      <h2><i class="bi bi-robot me-2 text-primary"></i>Automatrícula Inteligente</h2>
+      <p class="text-muted">Ingresa tu jornada y semestre. La IA seleccionará las materias más adecuadas para ti.</p>
+    </div>
+
+    <!-- Formulario -->
+    <div class="card shadow-sm mb-4">
+      <div class="card-body p-4">
+        <div class="row g-3">
+          <div class="col-md-5">
+            <label class="form-label fw-semibold">Jornada</label>
+            <select id="jornada" class="form-select form-select-lg">
+              <option value="">— Selecciona —</option>
+              <option value="diurno">☀️  Diurno (6:00 – 17:00)</option>
+              <option value="nocturno">🌙  Nocturno (17:00 – 23:00)</option>
+              <option value="virtual">💻  Virtual (cualquier horario)</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Semestre</label>
+            <select id="semestre" class="form-select form-select-lg">
+              <option value="">— Selecciona —</option>
+              {% for i in "12345678910" %}{% endfor %}
+              <option value="1">Semestre 1</option>
+              <option value="2">Semestre 2</option>
+              <option value="3">Semestre 3</option>
+              <option value="4">Semestre 4</option>
+              <option value="5">Semestre 5</option>
+              <option value="6">Semestre 6</option>
+              <option value="7">Semestre 7</option>
+              <option value="8">Semestre 8</option>
+              <option value="9">Semestre 9</option>
+              <option value="10">Semestre 10</option>
+            </select>
+          </div>
+          <div class="col-md-3 d-flex align-items-end">
+            <button id="btnMatricular" class="btn btn-primary btn-lg w-100" onclick="solicitarMatricula()">
+              <i class="bi bi-send me-1"></i>Matricularme
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado de carga -->
+    <div id="loading" class="text-center py-5 d-none">
+      <div class="spinner-border text-primary mb-3" role="status"></div>
+      <p class="text-muted">La IA está analizando los horarios disponibles para ti...</p>
+    </div>
+
+    <!-- Error -->
+    <div id="error" class="alert alert-danger d-none">
+      <i class="bi bi-exclamation-triangle-fill me-2"></i>
+      <span id="errorMsg"></span>
+    </div>
+
+    <!-- Resultado -->
+    <div id="resultado" class="d-none">
+
+      <!-- Resumen -->
+      <div class="alert alert-success d-flex align-items-center mb-4">
+        <i class="bi bi-check-circle-fill fs-4 me-3"></i>
+        <div>
+          Se encontraron <strong id="totalDisponibles"></strong> horarios disponibles para tu jornada.
+        </div>
+      </div>
+
+      <!-- Recomendación IA -->
+      <div class="card border-primary mb-4 shadow-sm">
+        <div class="card-header bg-primary text-white fw-bold">
+          <i class="bi bi-stars me-2"></i>Recomendación de la IA
+        </div>
+        <div class="card-body">
+          <pre id="recomendacionIA" class="mb-0"
+               style="white-space: pre-wrap; font-family: inherit; font-size: 0.95rem;"></pre>
+        </div>
+      </div>
+
+      <!-- Todos los horarios disponibles -->
+      <div class="card shadow-sm">
+        <div class="card-header fw-bold bg-white">
+          <i class="bi bi-table me-2"></i>Todos los horarios disponibles para tu jornada
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle mb-0">
+              <thead>
+                <tr>
+                  <th>Materia</th>
+                  <th>Programa</th>
+                  <th>Día</th>
+                  <th>Horario</th>
+                  <th>Salón</th>
+                  <th>Profesor</th>
+                </tr>
+              </thead>
+              <tbody id="tablaHorarios"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /resultado -->
+  </div>
+</div>
+
+<script>
+async function solicitarMatricula() {
+  const jornada  = document.getElementById('jornada').value;
+  const semestre = document.getElementById('semestre').value;
+
+  // Validación en el cliente
+  if (!jornada || !semestre) {
+    mostrarError('Por favor selecciona tu jornada y semestre.');
+    return;
+  }
+
+  // UI: mostrar carga
+  document.getElementById('loading').classList.remove('d-none');
+  document.getElementById('resultado').classList.add('d-none');
+  document.getElementById('error').classList.add('d-none');
+  document.getElementById('btnMatricular').disabled = true;
+
+  try {
+    const resp = await fetch('/api/automatricula/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ jornada, semestre })
+    });
+
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      mostrarError(data.error || 'Error desconocido del servidor.');
+      return;
+    }
+
+    // Mostrar resultados
+    document.getElementById('totalDisponibles').textContent = data.total_disponibles;
+    document.getElementById('recomendacionIA').textContent  = data.recomendacion_ia;
+
+    // Llenar tabla de horarios
+    const tbody = document.getElementById('tablaHorarios');
+    tbody.innerHTML = '';
+    if (data.horarios_disponibles.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-3">No hay horarios para esta jornada.</td></tr>';
+    } else {
+      data.horarios_disponibles.forEach(h => {
+        tbody.innerHTML += `
+          <tr>
+            <td><strong>${h.materia}</strong></td>
+            <td>${h.programa}</td>
+            <td><span class="badge bg-secondary">${h.dia}</span></td>
+            <td class="text-nowrap">${h.inicio} – ${h.fin}</td>
+            <td>${h.salon}</td>
+            <td>${h.profesor}</td>
+          </tr>`;
+      });
+    }
+
+    document.getElementById('resultado').classList.remove('d-none');
+
+  } catch (err) {
+    mostrarError('No se pudo conectar con el servidor. Intenta de nuevo.');
+  } finally {
+    document.getElementById('loading').classList.add('d-none');
+    document.getElementById('btnMatricular').disabled = false;
+  }
+}
+
+function mostrarError(msg) {
+  document.getElementById('errorMsg').textContent = msg;
+  document.getElementById('error').classList.remove('d-none');
+  document.getElementById('loading').classList.add('d-none');
+  document.getElementById('btnMatricular').disabled = false;
+}
+</script>
+{% endblock %}

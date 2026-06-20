@@ -6,7 +6,12 @@ from . import views
 app_name = 'core'
 
 urlpatterns = [
-    path('',            views.lista_horarios,  name='horarios'),
-    path('horarios/',   views.lista_horarios,  name='lista_horarios'),
-    path('facultades/', views.lista_facultades, name='facultades'),
+    # Vistas principales
+    path('',              views.lista_horarios,   name='horarios'),
+    path('horarios/',     views.lista_horarios,   name='lista_horarios'),
+    path('facultades/',   views.lista_facultades, name='facultades'),
+
+    # Automatrícula: vista HTML + endpoint API
+    path('automatricula/',      views.vista_automatricula, name='automatricula'),
+    path('api/automatricula/',  views.api_automatricula,   name='api_automatricula'),
 ]

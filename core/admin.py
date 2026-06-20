@@ -3,7 +3,7 @@ Configuración del panel de administración Django para los modelos académicos.
 """
 
 from django.contrib import admin
-from .models import Facultad, Programa, Profesor, Materia, Horario
+from .models import Facultad, Programa, Profesor, Materia, Horario, Estudiante
 
 
 # ── Inlines ──────────────────────────────────────────────────────────────────
@@ -87,3 +87,10 @@ class HorarioAdmin(admin.ModelAdmin):
     @admin.display(description='Facultad')
     def facultad_nombre(self, obj):
         return obj.materia.programa.facultad.nombre
+
+
+@admin.register(Estudiante)
+class EstudianteAdmin(admin.ModelAdmin):
+    list_display  = ('nombre', 'email', 'jornada', 'semestre', 'programa')
+    list_filter   = ('jornada', 'semestre', 'programa__facultad')
+    search_fields = ('nombre', 'email')
